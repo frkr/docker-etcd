@@ -1,3 +1,8 @@
+
+```bash
+docker service create -d --name etcd --network teste -e CLUSTER_SIZE=1 -e TASK_SLOT={{.Task.Slot}} -e SERVICE_NAME=etcd frkr/etcd:latest
+```
+---
 # Docker Etcd
 
 This image is based on Alpine Linux 3.5. The `-data-dir` is a volume mounted to `/data`, and the default ports are bound to Etcd and exposed. This image DOES NOT expose the old, deprecated etcd ports. It only exposes ports 2379 and 2380.

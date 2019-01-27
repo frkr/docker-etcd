@@ -1,22 +1,22 @@
 FROM alpine:latest
-
-LABEL name "Docker ETCD"
-LABEL version "1.0.0"
-LABEL maintainer "Lee Keitel <lfkeitel@usi.edu>"
+VOLUME /data
+EXPOSE 2379 2380
 
 ARG ETCD_VERSION=3.1.0
 
-RUN apk add --update ca-certificates openssl tar drill && \
+RUN apk add --no-cache --update ca-certificates openssl tar drill bind-tools curl && \
     wget https://github.com/coreos/etcd/releases/download/v${ETCD_VERSION}/etcd-v${ETCD_VERSION}-linux-amd64.tar.gz && \
     tar xzvf etcd-v${ETCD_VERSION}-linux-amd64.tar.gz && \
     mv etcd-v${ETCD_VERSION}-linux-amd64/etcd* /bin/ && \
     apk del --purge tar openssl && \
     rm -Rf etcd-v${ETCD_VERSION}-linux-amd64* /var/cache/apk/*
 
-ADD run.sh /bin/run.sh
+#COPY etup.sh /bin/etup
+#RUN chmod +x /bin/etup
+#COPY discovery.sh /bin/discovery
+#RUN chmod +x /bin/discovery
+#ENTRYPOINT ["/bin/discovery"]
 
-VOLUME /data
-
-EXPOSE 2379 2380
-
+COPY run.sh /bin/run.sh
+RUN chmod +x /bin/run.sh
 ENTRYPOINT ["/bin/run.sh"]

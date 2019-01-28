@@ -2,7 +2,7 @@ FROM alpine:latest
 VOLUME /data
 EXPOSE 2379 2380
 
-ARG ETCD_VERSION=3.1.0
+ARG ETCD_VERSION=3.2.17
 
 RUN apk add --no-cache --update ca-certificates openssl tar drill bind-tools curl && \
     wget https://github.com/coreos/etcd/releases/download/v${ETCD_VERSION}/etcd-v${ETCD_VERSION}-linux-amd64.tar.gz && \
@@ -10,12 +10,6 @@ RUN apk add --no-cache --update ca-certificates openssl tar drill bind-tools cur
     mv etcd-v${ETCD_VERSION}-linux-amd64/etcd* /bin/ && \
     apk del --purge tar openssl && \
     rm -Rf etcd-v${ETCD_VERSION}-linux-amd64* /var/cache/apk/*
-
-#COPY etup.sh /bin/etup
-#RUN chmod +x /bin/etup
-#COPY discovery.sh /bin/discovery
-#RUN chmod +x /bin/discovery
-#ENTRYPOINT ["/bin/discovery"]
 
 COPY run.sh /bin/run.sh
 RUN chmod +x /bin/run.sh

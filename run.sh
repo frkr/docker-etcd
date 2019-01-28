@@ -1,12 +1,9 @@
 #!/bin/sh
 
-sleep 10
-
 log() {
     echo "$(date +"%s %FT%T") [$(hostname)|$(hostname -i)] $@"
 };
 
-SERVICE_NAME=${SERVICE_NAME:-}
 CLUSTER_SIZE=${CLUSTER_SIZE:-1}
 SERVICE_CONTAINERS=""
 NUM_OF_PEERS=0
@@ -59,29 +56,23 @@ CMD="$CMD -advertise-client-urls ${ETCD_ADVERTISE_CLIENT_URLS}"
 ETCD_INITIAL_ADVERTISE_PEER_URLS="http://$MY_SERVICE_IP:2380"
 CMD="$CMD -initial-advertise-peer-urls ${ETCD_INITIAL_ADVERTISE_PEER_URLS}"
 
-## Setup cluster
-#if [ $NUM_OF_PEERS -gt 1 ]; then
-#
-#    # Build initial cluster IPs
-#    if [ -z "${ETCD_INITIAL_CLUSTER}" ]; then
-#        ETCD_INITIAL_CLUSTER=""
-#
-#        for peerAddress in $SERVICE_CONTAINERS; do
-#            peerName=etcd$(drill -x $peerAddress | grep $SERVICE_NAME | cut -f 5 | cut -d'.' -f2)
-#            ETCD_INITIAL_CLUSTER="${ETCD_INITIAL_CLUSTER}${peerName}=http://${peerAddress}:2380,"
-#        done
-#
-#        ETCD_INITIAL_CLUSTER="${ETCD_INITIAL_CLUSTER%?}"
-#    fi
-#
-#    CMD="$CMD -listen-peer-urls ${ETCD_LISTEN_PEER_URLS} -initial-cluster ${ETCD_INITIAL_CLUSTER} -initial-advertise-peer-urls ${ETCD_INITIAL_ADVERTISE_PEER_URLS}"
-#fi
+# Setup cluster
+if [ $NUM_OF_PEERS -gt 1 ]; then
 
-CMD="$CMD $*"
+    # Build initial cluster IPs
+    if [ -z "${ETCD_INITIAL_CLUSTER}" ]; then
+        ETCD_INITIAL_CLUSTER=""
 
-log INFO "Starting etcd: $CMD"
+        for peerAddress in $SERVICE_CONTAINERS; do
+            peerName=etcd$(drill -x $peerAddress | grep $SERVICE_NAME | cut -f 5 | cut -d'.' -f2)
+            ETCD_INITIAL_CLUSTER="${ETCD_INITIAL_CLUSTER}${peerName}=http://${peerAddress}:2380,"
+        done
 
-exec $CMD &
+        ETCD_INITIAL_CLUSTER="${ETCD_INITIAL_CLUSTER%?}"
+    fi
+
+    CMD="$CMD -listen-peer-urls ${ETCD_LISTEN_PEER_URLS} -initial-cluster ${ETCD_INITIAL_CLUSTER} -initial-advertise-peer-urls ${ETCD_INITIAL_ADVERTISE_PEER_URLS}"
+fi
 
 # Joining an existing cluster
 if [ $NUM_OF_PEERS -gt $CLUSTER_SIZE ]; then
@@ -95,12 +86,12 @@ if [ $NUM_OF_PEERS -gt $CLUSTER_SIZE ]; then
     log INFO Endpoints: $ENDPOINTS
 
     export ETCDCTL_API=3
-    etcdctl_out=$(etcdctl --endpoints="${ENDPOINTS}" member add ${ETCD_NAME} --peer-urls="http://$MY_SERVICE_IP:2380")
+    etcdctl_out=$(etcdctl --endpoints="$ENDPOINTS" member add $ETCD_NAME --peer-urls="http://$MY_SERVICE_IP:2380")
     etcdctl_exit_code=$?
 
     # Check if multiple members are attempting to join
     if [ -n "$(echo "$etcdctl_out" | grep 'unhealthy cluster')" ]; then
-        log ERROR Cluster can not accept new members right now
+        log ERROR Cluster not accept new members right now
         exit 1
     fi
 
@@ -115,8 +106,8 @@ else
     log INFO Joining new cluster
 fi
 
-while true;
-do
-    #log INFO heartbeat OK
-    sleep 10
-done
+CMD="$CMD $*"
+
+log INFO "Starting etcd: $CMD"
+
+exec $CMD

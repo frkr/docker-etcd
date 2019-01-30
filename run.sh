@@ -42,36 +42,36 @@ while [ -z "$(drill -x $MY_SERVICE_IP | grep $SERVICE_NAME)" ]; do
     getServiceContainers
 done
 
-ETCD_LISTEN_CLIENT_URLS="http://$(hostname -i):2379"
+ETCD_LISTEN_CLIENT_URLS="http://0.0.0.0:2379"
 ETCD_LISTEN_PEER_URLS="http://$(hostname -i):2380"
 
-CMD="$CMD -listen-client-urls ${ETCD_LISTEN_CLIENT_URLS}"
+CMD="$CMD -listen-client-urls $ETCD_LISTEN_CLIENT_URLS"
 
 ETCD_NAME=etcd$TASK_SLOT
 CMD="$CMD -name $ETCD_NAME"
 
-ETCD_ADVERTISE_CLIENT_URLS="http://$MY_SERVICE_IP:2379"
-CMD="$CMD -advertise-client-urls ${ETCD_ADVERTISE_CLIENT_URLS}"
+ETCD_ADVERTISE_CLIENT_URLS="http://0.0.0.0:2379"
+CMD="$CMD -advertise-client-urls $ETCD_ADVERTISE_CLIENT_URLS"
 
 ETCD_INITIAL_ADVERTISE_PEER_URLS="http://$MY_SERVICE_IP:2380"
-CMD="$CMD -initial-advertise-peer-urls ${ETCD_INITIAL_ADVERTISE_PEER_URLS}"
+CMD="$CMD -initial-advertise-peer-urls $ETCD_INITIAL_ADVERTISE_PEER_URLS"
 
 # Setup cluster
 if [ $NUM_OF_PEERS -gt 1 ]; then
 
     # Build initial cluster IPs
-    if [ -z "${ETCD_INITIAL_CLUSTER}" ]; then
+    if [ -z "$ETCD_INITIAL_CLUSTER" ]; then
         ETCD_INITIAL_CLUSTER=""
 
         for peerAddress in $SERVICE_CONTAINERS; do
             peerName=etcd$(drill -x $peerAddress | grep $SERVICE_NAME | cut -f 5 | cut -d'.' -f2)
-            ETCD_INITIAL_CLUSTER="${ETCD_INITIAL_CLUSTER}${peerName}=http://${peerAddress}:2380,"
+            ETCD_INITIAL_CLUSTER="$ETCD_INITIAL_CLUSTER$peerName=http://$peerAddress:2380,"
         done
 
-        ETCD_INITIAL_CLUSTER="${ETCD_INITIAL_CLUSTER%?}"
+#        ETCD_INITIAL_CLUSTER="$ETCD_INITIAL_CLUSTER%?"
     fi
 
-    CMD="$CMD -listen-peer-urls ${ETCD_LISTEN_PEER_URLS} -initial-cluster ${ETCD_INITIAL_CLUSTER} -initial-advertise-peer-urls ${ETCD_INITIAL_ADVERTISE_PEER_URLS}"
+    CMD="$CMD -listen-peer-urls $ETCD_LISTEN_PEER_URLS -initial-cluster $ETCD_INITIAL_CLUSTER -initial-advertise-peer-urls $ETCD_INITIAL_ADVERTISE_PEER_URLS"
 fi
 
 # Joining an existing cluster
@@ -80,9 +80,9 @@ if [ $NUM_OF_PEERS -gt $CLUSTER_SIZE ]; then
 
     ENDPOINTS=""
     for peerAddress in $SERVICE_CONTAINERS; do
-        ENDPOINTS="${ENDPOINTS}http://${peerAddress}:2379,"
+        ENDPOINTS="$ENDPOINTShttp://$peerAddress:2379,"
     done
-    ENDPOINTS="${ENDPOINTS%?}"
+#    ENDPOINTS="$ENDPOINTS%?"
     log INFO Endpoints: $ENDPOINTS
 
     export ETCDCTL_API=3

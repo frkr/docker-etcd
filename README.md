@@ -23,6 +23,7 @@ These settings may be overwritten by defining the variables at run time or passi
 ```bash
 docker service create -d --name etcd \
 --network teste \
+-p 2379:2379 \
 --replicas 3 -e CLUSTER_SIZE=3 \
 -e TASK_SLOT={{.Task.Slot}} \
 -e SERVICE_NAME=etcd \
